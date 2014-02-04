@@ -60,6 +60,21 @@ class OptionsResolver implements OptionsResolverInterface
     {
         $this->defaultOptions = new Options();
     }
+    
+    /**
+     * Factory method for chainability
+     *
+     * Example:
+     *
+     *     $resolver = OptionsResolver::create()
+     *         ->setRequired(array('name'));
+     *
+     * @return OptionsResolverInterface
+     */
+    public static function create()
+    {
+        return new static();
+    }
 
     /**
      * Clones the resolver.
@@ -230,7 +245,7 @@ class OptionsResolver implements OptionsResolverInterface
         // Resolve options
         $resolvedOptions = $combinedOptions->all();
 
-        $this->validateOptionValues($resolvedOptions);
+        $resolvedOptions = $this->validateOptionValues($resolvedOptions);
         $this->validateOptionTypes($resolvedOptions);
 
         return $resolvedOptions;
@@ -302,8 +317,14 @@ class OptionsResolver implements OptionsResolverInterface
                 if (is_callable($allowedValues) && !call_user_func($allowedValues, $options[$option])) {
                     throw new InvalidOptionsException(sprintf('The option "%s" has the value "%s", which it is not valid', $option, $options[$option]));
                 }
+                
+                if($allowedValues instanceof OptionsResolverInterface) {
+                    $options[$option] = $allowedValues->resolve($options[$option]);
+                }
             }
         }
+        
+        return $options;
     }
 
     /**
